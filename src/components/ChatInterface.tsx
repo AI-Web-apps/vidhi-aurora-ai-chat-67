@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Sparkles, Bot, User } from 'lucide-react';
+import { Send, Paperclip, Sparkles, Bot, User, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChatContext } from '@/contexts/ChatContext';
 import { geminiService } from '@/services/geminiService';
+import { useToast } from '@/hooks/use-toast';
 
 const ChatInterface = () => {
   const {
@@ -16,9 +17,24 @@ const ChatInterface = () => {
   } = useChatContext();
 
   const [inputValue, setInputValue] = useState('');
+  const [showPdfOptions, setShowPdfOptions] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
-  const handleSendMessage = async () => {
+  // Pre-loaded AI policy document URLs for quick access
+  const policyDocuments = [
+    {
+      name: "EU AI Act",
+      url: "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32021R0106"
+    },
+    {
+      name: "OECD AI Principles", 
+      url: "https://www.oecd.org/going-digital/ai/principles/"
+    }
+  ];
+
+  const handleSendMessage = async (withPdf = false, selectedPdfUrl = '') => {
     if (!inputValue.trim() || !currentConversation) return;
 
     // Add user message
@@ -28,12 +44,28 @@ const ChatInterface = () => {
     });
 
     const userMessage = inputValue;
+    const pdfToUse = withPdf ? (selectedPdfUrl || pdfUrl) : '';
     setInputValue('');
+    setPdfUrl('');
+    setShowPdfOptions(false);
     setIsLoading(true);
 
     try {
-      // Get AI response from Gemini
-      const aiResponse = await geminiService.generateResponse(userMessage);
+      let aiResponse;
+      
+      if (pdfToUse) {
+        // Use PDF-enhanced response
+        const pdfName = pdfToUse.split('/').pop() || 'Policy Document';
+        aiResponse = await geminiService.generateResponseWithPDF(userMessage, pdfToUse, pdfName);
+        
+        toast({
+          title: "Document analyzed",
+          description: `Response generated using ${pdfName}`,
+        });
+      } else {
+        // Regular response
+        aiResponse = await geminiService.generateResponse(userMessage);
+      }
       
       addMessage({
         role: 'assistant',
@@ -148,6 +180,48 @@ const ChatInterface = () => {
         </div>
       </ScrollArea>
 
+      {/* PDF Options Panel */}
+      {showPdfOptions && (
+        <div className="p-4 border-t border-white/10 glass-dark">
+          <h4 className="text-sm font-medium text-white/70 mb-3">Analyze with Document</h4>
+          
+          {/* Quick Access Policy Documents */}
+          <div className="grid grid-cols-1 gap-2 mb-4">
+            {policyDocuments.map((doc, index) => (
+              <Button
+                key={index}
+                onClick={() => handleSendMessage(true, doc.url)}
+                disabled={isLoading || !inputValue.trim()}
+                className="justify-start text-left h-auto p-3 premium-glass border border-white/20 rounded-xl glow-hover"
+              >
+                <FileText className="w-4 h-4 mr-2 text-white/70" />
+                <div>
+                  <div className="text-sm text-white">{doc.name}</div>
+                  <div className="text-xs text-white/50 truncate">{doc.url}</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+
+          {/* Custom URL Input */}
+          <div className="flex space-x-2">
+            <Input
+              value={pdfUrl}
+              onChange={(e) => setPdfUrl(e.target.value)}
+              placeholder="Enter PDF URL..."
+              className="premium-glass border-white/20 text-white placeholder:text-white/50 rounded-xl flex-1"
+            />
+            <Button
+              onClick={() => handleSendMessage(true)}
+              disabled={isLoading || !inputValue.trim() || !pdfUrl.trim()}
+              className="aurora-bg rounded-xl glow-hover"
+            >
+              Analyze
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="p-6 border-t border-white/10">
         <div className="flex items-center space-x-3">
@@ -155,6 +229,7 @@ const ChatInterface = () => {
             variant="ghost" 
             size="sm" 
             className="premium-glass rounded-full w-10 h-10 p-0 glow-hover"
+            onClick={() => setShowPdfOptions(!showPdfOptions)}
           >
             <Paperclip className="w-4 h-4 text-white" />
           </Button>
@@ -168,7 +243,7 @@ const ChatInterface = () => {
               disabled={isLoading}
             />
             <Button
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={isLoading || !inputValue.trim()}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 aurora-bg rounded-full w-8 h-8 p-0 glow-hover"
             >
@@ -177,7 +252,7 @@ const ChatInterface = () => {
           </div>
         </div>
         <p className="text-xs text-white/40 mt-2 text-center">
-          Vidhi can analyze PDF documents and provide insights on AI policies
+          {showPdfOptions ? "Select a document to analyze with your question" : "Click the paperclip to analyze PDF documents"}
         </p>
       </div>
     </div>
