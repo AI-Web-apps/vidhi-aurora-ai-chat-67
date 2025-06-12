@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Sparkles, Bot, User } from 'lucide-react';
+import { Send, Paperclip, Sparkles, Bot, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface Message {
   id: string;
@@ -70,6 +71,9 @@ const ChatInterface = () => {
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
+          <SidebarTrigger className="glass rounded-full w-10 h-10 p-0 glow-hover border-white/20">
+            <Menu className="w-4 h-4 text-white" />
+          </SidebarTrigger>
           <div className="w-10 h-10 rounded-full aurora-bg flex items-center justify-center glow">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
