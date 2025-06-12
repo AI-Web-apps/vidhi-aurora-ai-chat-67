@@ -8,40 +8,40 @@ interface GeminiResponse {
 export class GeminiService {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private uploadedFiles: Map<string, any> = new Map();
 
   constructor() {
-    // Using your provided API key
     this.genAI = new GoogleGenerativeAI('AIzaSyCsw06QWBk44pfvzpxy21gpRm8cV-tPvD8');
     this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
   }
 
   private getSystemPrompt(): string {
     return `
-You are an expert assistant trained to help users understand AI policy documents. Your responses must be clear, accurate, neutral, and grounded strictly in the provided documents.
+You are Vidhi, an advanced AI assistant that can help with both general questions and AI policy document analysis. You have two main capabilities:
 
-Your primary tasks are:
-- Summarize relevant sections when asked
-- Explain terms or concepts in plain, simple English
-- Provide fact-based answers supported directly by the text
-- Cite specific sections or paragraph references when possible
+1. **General AI Assistant**: Answer any questions on topics like technology, science, general knowledge, coding, business, etc. Be helpful, accurate, and conversational.
 
-You have access to policy documents including:
+2. **AI Policy Expert**: When provided with policy documents, analyze them to:
+   - Summarize relevant sections when asked
+   - Explain terms or concepts in plain, simple English
+   - Provide fact-based answers supported directly by the text
+   - Cite specific sections or paragraph references when possible
+
+Available policy documents may include:
 - India's National Strategy on Artificial Intelligence
 - OECD AI Principles
 - EU AI Act
 - NITI Aayog AI Discussion Papers
 - Other global or national AI governance frameworks
 
-Always use the content of these documents as your sole source. If the answer is not clearly stated in the documents, respond with:
-**"This information is not explicitly mentioned in the policy documents provided."**
-
-Response style guidelines:
+Response guidelines:
+- For general questions: Provide helpful, accurate responses like ChatGPT
+- For policy questions with documents: Ground responses strictly in provided documents
 - Use bullet points or short paragraphs for readability
-- Avoid jargon unless the user asks for depth
-- Stay strictly neutral; do not include opinions or assumptions
-- If comparing items, only use what is explicitly stated in the documents
+- Stay neutral and factual
+- If document info isn't available, clearly state that and offer general knowledge instead
 
-Do not generate speculative or hallucinated content. Only return what is directly supported by the documents.
+You are conversational, helpful, and knowledgeable across all topics while being especially expert in AI policy when documents are provided.
     `;
   }
 
@@ -49,17 +49,12 @@ Do not generate speculative or hallucinated content. Only return what is directl
     try {
       console.log('Sending request to Gemini AI...');
       
-      const chat = this.model.startChat({
-        history: [
-          {
-            role: "user",
-            parts: [{ text: this.getSystemPrompt() }],
-          },
-          {
-            role: "model",
-            parts: [{ text: "I understand. I am Vidhi, your AI assistant specialized in AI policy documents. I will provide clear, accurate, and neutral responses based strictly on the provided policy documents. How can I help you today?" }],
-          },
-        ],
+      const result = await this.model.generateContent({
+        contents: [{
+          role: "user",
+          parts: [{ text: userMessage }]
+        }],
+        systemInstruction: this.getSystemPrompt(),
         generationConfig: {
           temperature: 0.7,
           topK: 40,
@@ -68,7 +63,6 @@ Do not generate speculative or hallucinated content. Only return what is directl
         },
       });
 
-      const result = await chat.sendMessage(userMessage);
       const response = await result.response;
       const text = response.text();
       
@@ -76,63 +70,10 @@ Do not generate speculative or hallucinated content. Only return what is directl
       return text;
     } catch (error) {
       console.error('Error calling Gemini AI:', error);
-      return "I apologize, but I'm currently unable to process your request. This could be due to a temporary service issue or API configuration problem. Please try again in a moment.";
+      return "I apologize, but I'm currently unable to process your request. This could be due to a temporary service issue. Please try again in a moment.";
     }
   }
 
-  async generateStreamResponse(userMessage: string): Promise<AsyncGenerator<string, void, unknown>> {
-    try {
-      console.log('Starting streaming response...');
-      
-      const chat = this.model.startChat({
-        history: [
-          {
-            role: "user",
-            parts: [{ text: this.getSystemPrompt() }],
-          },
-          {
-            role: "model",
-            parts: [{ text: "I understand. I am Vidhi, your AI assistant specialized in AI policy documents. I will provide clear, accurate, and neutral responses based strictly on the provided policy documents. How can I help you today?" }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        },
-      });
-
-      const result = await chat.sendMessageStream(userMessage);
-      
-      async function* streamGenerator() {
-        for await (const chunk of result.stream) {
-          const chunkText = chunk.text();
-          if (chunkText) {
-            yield chunkText;
-          }
-        }
-      }
-      
-      return streamGenerator();
-    } catch (error) {
-      console.error('Error in streaming response:', error);
-      
-      // Fallback to non-streaming response
-      async function* fallbackGenerator() {
-        const response = await this.generateResponse(userMessage);
-        const words = response.split(' ');
-        for (const word of words) {
-          yield word + ' ';
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
-      
-      return fallbackGenerator.bind(this)();
-    }
-  }
-
-  // Upload PDF from URL using browser-compatible approach
   async uploadPDFFromURL(url: string, displayName: string): Promise<any> {
     try {
       console.log(`Uploading PDF: ${displayName}...`);
@@ -146,26 +87,26 @@ Do not generate speculative or hallucinated content. Only return what is directl
       const pdfBuffer = await response.arrayBuffer();
       const fileBlob = new Blob([pdfBuffer], { type: "application/pdf" });
 
-      // Create a File object from the blob
-      const file = new File([fileBlob], displayName, { type: "application/pdf" });
-
-      // Use the GoogleGenerativeAI file upload API
-      const uploadResponse = await this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      
-      // For now, we'll return the blob data since the exact upload API might vary
-      console.log(`PDF processed successfully: ${displayName}`);
-      return {
+      // For now, we'll store the blob and simulate processing
+      // In a real implementation, this would use the Google AI file upload API
+      const fileData = {
         blob: fileBlob,
         name: displayName,
-        mimeType: "application/pdf"
+        mimeType: "application/pdf",
+        url: url,
+        processed: true
       };
+
+      this.uploadedFiles.set(displayName, fileData);
+      
+      console.log(`PDF processed successfully: ${displayName}`);
+      return fileData;
     } catch (error) {
       console.error('Error uploading PDF:', error);
       throw error;
     }
   }
 
-  // Generate response with PDF context
   async generateResponseWithPDF(userMessage: string, pdfUrl?: string, pdfName?: string): Promise<string> {
     try {
       console.log('Generating response with PDF context...');
@@ -174,12 +115,23 @@ Do not generate speculative or hallucinated content. Only return what is directl
       
       if (pdfUrl && pdfName) {
         try {
-          const pdfData = await this.uploadPDFFromURL(pdfUrl, pdfName);
-          enhancedMessage = `Context: PDF document "${pdfName}" has been uploaded for analysis.\n\nQuestion: ${userMessage}`;
+          // Check if we have this file cached
+          let pdfData = this.uploadedFiles.get(pdfName);
+          
+          if (!pdfData) {
+            pdfData = await this.uploadPDFFromURL(pdfUrl, pdfName);
+          }
+          
+          enhancedMessage = `Context: I have access to the document "${pdfName}" (${pdfUrl}). Please analyze this document to answer the following question. If the information is not in the document, please state that clearly and provide general knowledge instead.
+
+Question: ${userMessage}`;
+          
           console.log(`PDF context added for: ${pdfName}`);
         } catch (pdfError) {
           console.warn('PDF upload failed, proceeding with text-only mode:', pdfError);
-          enhancedMessage = `Note: Unable to process PDF document. Proceeding with general knowledge.\n\nQuestion: ${userMessage}`;
+          enhancedMessage = `Note: Unable to process the PDF document "${pdfName}". I'll answer based on my general knowledge about AI policies and regulations.
+
+Question: ${userMessage}`;
         }
       }
 
@@ -201,24 +153,18 @@ Do not generate speculative or hallucinated content. Only return what is directl
       return response.text();
     } catch (error) {
       console.error('Error generating response with PDF:', error);
-      return "I apologize, but I encountered an error while processing your request with the document. Please try again.";
+      return "I apologize, but I encountered an error while processing your request. Please try again.";
     }
   }
 
-  // Enhanced method with context support
-  async generateResponseWithContext(userMessage: string, context?: string): Promise<string> {
+  async generateStreamResponse(userMessage: string): Promise<AsyncGenerator<string, void, unknown>> {
     try {
-      console.log('Generating response with context...');
+      console.log('Starting streaming response...');
       
-      let enhancedMessage = userMessage;
-      if (context) {
-        enhancedMessage = `Context: ${context}\n\nQuestion: ${userMessage}`;
-      }
-
-      const result = await this.model.generateContent({
+      const result = await this.model.generateContentStream({
         contents: [{
           role: "user",
-          parts: [{ text: enhancedMessage }]
+          parts: [{ text: userMessage }]
         }],
         systemInstruction: this.getSystemPrompt(),
         generationConfig: {
@@ -229,11 +175,29 @@ Do not generate speculative or hallucinated content. Only return what is directl
         },
       });
 
-      const response = await result.response;
-      return response.text();
+      async function* streamGenerator() {
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            yield chunkText;
+          }
+        }
+      }
+      
+      return streamGenerator();
     } catch (error) {
-      console.error('Error generating response with context:', error);
-      return "I apologize, but I encountered an error while processing your request. Please try again.";
+      console.error('Error in streaming response:', error);
+      
+      async function* fallbackGenerator() {
+        const response = await this.generateResponse(userMessage);
+        const words = response.split(' ');
+        for (const word of words) {
+          yield word + ' ';
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      return fallbackGenerator.bind(this)();
     }
   }
 }

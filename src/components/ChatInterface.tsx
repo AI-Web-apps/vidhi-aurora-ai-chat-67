@@ -20,6 +20,7 @@ const ChatInterface = () => {
   const [showPdfOptions, setShowPdfOptions] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Pre-loaded AI policy document URLs for quick access
@@ -33,6 +34,10 @@ const ChatInterface = () => {
       url: "https://www.oecd.org/going-digital/ai/principles/"
     }
   ];
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleSendMessage = async (withPdf = false, selectedPdfUrl = '') => {
     if (!inputValue.trim() || !currentConversation) return;
@@ -50,6 +55,9 @@ const ChatInterface = () => {
     setShowPdfOptions(false);
     setIsLoading(true);
 
+    // Scroll to bottom after user message
+    setTimeout(scrollToBottom, 100);
+
     try {
       let aiResponse;
       
@@ -63,7 +71,7 @@ const ChatInterface = () => {
           description: `Response generated using ${pdfName}`,
         });
       } else {
-        // Regular response
+        // Regular response - works as both general AI and policy assistant
         aiResponse = await geminiService.generateResponse(userMessage);
       }
       
@@ -71,12 +79,16 @@ const ChatInterface = () => {
         role: 'assistant',
         content: aiResponse
       });
+
+      // Scroll to bottom after AI response
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       console.error('Error getting AI response:', error);
       addMessage({
         role: 'assistant',
         content: "I apologize, but I encountered an error while processing your request. Please try again."
       });
+      setTimeout(scrollToBottom, 100);
     } finally {
       setIsLoading(false);
     }
@@ -89,15 +101,14 @@ const ChatInterface = () => {
     }
   };
 
+  // Auto-scroll when messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [currentConversation?.messages]);
+    scrollToBottom();
+  }, [currentConversation?.messages, isLoading]);
 
   if (!currentConversation) {
     return (
-      <div className="h-screen flex items-center justify-center enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4">
+      <div className="h-[85vh] flex items-center justify-center enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4">
         <div className="text-center">
           <Sparkles className="w-16 h-16 aurora-text mx-auto mb-4 premium-glow" />
           <h2 className="text-2xl font-bold aurora-text mb-2">Welcome to VidhiAI</h2>
@@ -108,7 +119,7 @@ const ChatInterface = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4 ml-20">
+    <div className="h-[85vh] flex flex-col enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4 ml-20">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -117,7 +128,7 @@ const ChatInterface = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold aurora-text">Vidhi</h1>
-            <p className="text-sm text-white/70">AI Policy Assistant</p>
+            <p className="text-sm text-white/70">AI Assistant & Policy Expert</p>
           </div>
         </div>
         <div className="text-xs text-white/50 premium-glass px-3 py-1 rounded-full">
@@ -177,6 +188,7 @@ const ChatInterface = () => {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
@@ -238,7 +250,7 @@ const ChatInterface = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me about AI policies, regulations, or frameworks..."
+              placeholder="Ask me anything or analyze AI policy documents..."
               className="premium-glass border-white/20 text-white placeholder:text-white/50 rounded-2xl pr-12 h-12 glow-hover"
               disabled={isLoading}
             />
@@ -252,7 +264,7 @@ const ChatInterface = () => {
           </div>
         </div>
         <p className="text-xs text-white/40 mt-2 text-center">
-          {showPdfOptions ? "Select a document to analyze with your question" : "Click the paperclip to analyze PDF documents"}
+          {showPdfOptions ? "Select a document to analyze with your question" : "General AI assistant with policy document analysis capabilities"}
         </p>
       </div>
     </div>
