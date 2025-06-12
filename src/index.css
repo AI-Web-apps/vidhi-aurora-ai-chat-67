@@ -46,11 +46,11 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Aurora gradient variables */
-    --aurora-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --aurora-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --aurora-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    --aurora-purple: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+    /* Premium Aurora gradient variables - darker theme */
+    --aurora-primary: linear-gradient(135deg, #4c5d7a 0%, #5a4c78 100%);
+    --aurora-secondary: linear-gradient(135deg, #d274db 0%, #d1445c 100%);
+    --aurora-accent: linear-gradient(135deg, #3d8bfe 0%, #00c4dc 100%);
+    --aurora-purple: linear-gradient(135deg, #8571c1 0%, #d9a7db 100%);
   }
 
   .dark {
@@ -91,7 +91,7 @@
 
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 25%, #4a5568 50%, #2d3748 75%, #1a202c 100%);
     min-height: 100vh;
   }
 }
@@ -99,15 +99,15 @@
 /* Custom glassmorphism and neumorphism utilities */
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .glass-dark {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .neuro {
@@ -149,11 +149,11 @@
   }
 
   .glow {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
   }
 
   .glow-hover:hover {
-    box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.4);
     transition: box-shadow 0.3s ease;
   }
 }

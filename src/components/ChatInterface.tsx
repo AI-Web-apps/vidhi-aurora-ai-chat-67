@@ -4,52 +4,50 @@ import { Send, Paperclip, Sparkles, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+import { useChatContext } from '@/contexts/ChatContext';
+import { geminiService } from '@/services/geminiService';
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hello! I'm Vidhi, your AI assistant specialized in AI policy documents. I can help you understand complex policy frameworks, explain technical terms, and provide insights from various AI governance documents. How can I assist you today?",
-      timestamp: new Date()
-    }
-  ]);
+  const {
+    currentConversation,
+    addMessage,
+    isLoading,
+    setIsLoading
+  } = useChatContext();
+
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !currentConversation) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
+    // Add user message
+    addMessage({
       role: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    };
+      content: inputValue
+    });
 
-    setMessages(prev => [...prev, newMessage]);
+    const userMessage = inputValue;
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+    try {
+      // Get AI response from Gemini
+      const aiResponse = await geminiService.generateResponse(userMessage);
+      
+      addMessage({
         role: 'assistant',
-        content: "I understand you're asking about AI policy. Based on the documents I have access to, I can provide detailed information about various AI governance frameworks. Could you be more specific about which aspect you'd like to explore?",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiResponse]);
+        content: aiResponse
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      addMessage({
+        role: 'assistant',
+        content: "I apologize, but I encountered an error while processing your request. Please try again."
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -63,10 +61,22 @@ const ChatInterface = () => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [currentConversation?.messages]);
+
+  if (!currentConversation) {
+    return (
+      <div className="h-screen flex items-center justify-center glass rounded-3xl border border-white/20 backdrop-blur-2xl shadow-2xl m-4">
+        <div className="text-center">
+          <Sparkles className="w-16 h-16 aurora-text mx-auto mb-4" />
+          <h2 className="text-2xl font-bold aurora-text mb-2">Welcome to VidhiAI</h2>
+          <p className="text-white/70">Start a new conversation to begin</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col glass rounded-3xl border border-white/20 backdrop-blur-2xl shadow-2xl m-4">
+    <div className="h-screen flex flex-col glass rounded-3xl border border-white/20 backdrop-blur-2xl shadow-2xl m-4 ml-20">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -86,7 +96,7 @@ const ChatInterface = () => {
       {/* Messages */}
       <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
         <div className="space-y-6">
-          {messages.map((message) => (
+          {currentConversation.messages.map((message) => (
             <div
               key={message.id}
               className={`flex items-start space-x-3 ${
@@ -111,7 +121,7 @@ const ChatInterface = () => {
                     : 'rounded-tl-sm'
                 } glow-hover`}
               >
-                <p className="text-white leading-relaxed">{message.content}</p>
+                <p className="text-white leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 <p className="text-xs text-white/50 mt-2">
                   {message.timestamp.toLocaleTimeString([], { 
                     hour: '2-digit', 

@@ -1,16 +1,22 @@
 
 import React from 'react';
-import { Plus, MessageSquare, FileText, Settings, Trash2, Download } from 'lucide-react';
+import { Plus, MessageSquare, FileText, Settings, Trash2, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useChatContext } from '@/contexts/ChatContext';
 
-const ChatSidebar = () => {
-  const conversations = [
-    { id: '1', title: 'EU AI Act Risk Classification', date: '2 hours ago' },
-    { id: '2', title: 'OECD AI Principles Overview', date: '1 day ago' },
-    { id: '3', title: 'India AI Strategy Analysis', date: '3 days ago' },
-    { id: '4', title: 'NITI Aayog Discussion Paper', date: '1 week ago' },
-  ];
+interface ChatSidebarProps {
+  onClose?: () => void;
+}
+
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
+  const {
+    conversations,
+    currentConversationId,
+    createNewConversation,
+    switchConversation,
+    deleteConversation
+  } = useChatContext();
 
   const features = [
     { icon: FileText, label: 'Document Analysis', active: true },
@@ -19,17 +25,44 @@ const ChatSidebar = () => {
     { icon: Settings, label: 'System Prompts', active: false },
   ];
 
+  const handleNewConversation = () => {
+    createNewConversation();
+    if (onClose) onClose();
+  };
+
+  const handleConversationClick = (conversationId: string) => {
+    switchConversation(conversationId);
+    if (onClose) onClose();
+  };
+
   return (
     <div className="w-80 h-screen glass border-r border-white/20 backdrop-blur-2xl flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold aurora-text">VidhiAI</h2>
-          <Button className="aurora-bg rounded-full w-8 h-8 p-0 glow-hover">
-            <Plus className="w-4 h-4 text-white" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={handleNewConversation}
+              className="aurora-bg rounded-full w-8 h-8 p-0 glow-hover"
+            >
+              <Plus className="w-4 h-4 text-white" />
+            </Button>
+            {onClose && (
+              <Button
+                onClick={onClose}
+                variant="ghost"
+                className="w-8 h-8 p-0 rounded-full text-white/70 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
-        <Button className="w-full glass-dark text-white rounded-xl h-10 glow-hover">
+        <Button
+          onClick={handleNewConversation}
+          className="w-full glass-dark text-white rounded-xl h-10 glow-hover"
+        >
           <Plus className="w-4 h-4 mr-2" />
           New Conversation
         </Button>
@@ -45,19 +78,28 @@ const ChatSidebar = () => {
             {conversations.map((conv) => (
               <div
                 key={conv.id}
-                className="p-3 glass-dark rounded-xl cursor-pointer glow-hover group"
+                className={`p-3 glass-dark rounded-xl cursor-pointer glow-hover group ${
+                  currentConversationId === conv.id ? 'aurora-accent-bg' : ''
+                }`}
+                onClick={() => handleConversationClick(conv.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-white truncate">
                       {conv.title}
                     </h4>
-                    <p className="text-xs text-white/50 mt-1">{conv.date}</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {conv.updatedAt.toLocaleDateString()}
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteConversation(conv.id);
+                    }}
                   >
                     <Trash2 className="w-3 h-3 text-white/50" />
                   </Button>

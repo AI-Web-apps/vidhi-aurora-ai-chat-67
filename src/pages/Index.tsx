@@ -1,18 +1,50 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ChatProvider } from '@/contexts/ChatContext';
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatInterface from '@/components/ChatInterface';
 import DocumentUpload from '@/components/DocumentUpload';
 
 const Index = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="min-h-screen flex w-full overflow-hidden">
-      <ChatSidebar />
-      <div className="flex-1 flex flex-col">
-        <ChatInterface />
+    <ChatProvider>
+      <div className="min-h-screen flex w-full overflow-hidden">
+        {/* Sidebar Toggle Button - Fixed position */}
+        <Button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="fixed top-4 left-4 z-50 w-10 h-10 p-0 aurora-bg rounded-full glow-hover"
+        >
+          <Menu className="w-5 h-5 text-white" />
+        </Button>
+
+        {/* Sidebar */}
+        <div className={`transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } fixed left-0 top-0 z-40`}>
+          <ChatSidebar onClose={() => setSidebarOpen(false)} />
+        </div>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          <ChatInterface />
+        </div>
+
+        {/* Document Upload */}
+        <DocumentUpload />
       </div>
-      <DocumentUpload />
-    </div>
+    </ChatProvider>
   );
 };
 
