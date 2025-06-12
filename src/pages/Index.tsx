@@ -12,11 +12,18 @@ const Index = () => {
 
   return (
     <ChatProvider>
-      <div className="min-h-screen flex w-full overflow-hidden">
+      <div className="min-h-screen flex w-full overflow-hidden relative">
+        {/* Enhanced background with multiple gradient layers */}
+        <div className="fixed inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/20 via-transparent to-purple-800/30"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/50 to-black"></div>
+        </div>
+
         {/* Sidebar Toggle Button - Fixed position */}
         <Button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed top-4 left-4 z-50 w-10 h-10 p-0 aurora-bg rounded-full glow-hover"
+          className="fixed top-4 left-4 z-50 w-10 h-10 p-0 premium-glass rounded-full glow-hover"
         >
           <Menu className="w-5 h-5 text-white" />
         </Button>

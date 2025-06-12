@@ -65,9 +65,9 @@ const ChatInterface = () => {
 
   if (!currentConversation) {
     return (
-      <div className="h-screen flex items-center justify-center glass rounded-3xl border border-white/20 backdrop-blur-2xl shadow-2xl m-4">
+      <div className="h-screen flex items-center justify-center enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4">
         <div className="text-center">
-          <Sparkles className="w-16 h-16 aurora-text mx-auto mb-4" />
+          <Sparkles className="w-16 h-16 aurora-text mx-auto mb-4 premium-glow" />
           <h2 className="text-2xl font-bold aurora-text mb-2">Welcome to VidhiAI</h2>
           <p className="text-white/70">Start a new conversation to begin</p>
         </div>
@@ -76,11 +76,11 @@ const ChatInterface = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col glass rounded-3xl border border-white/20 backdrop-blur-2xl shadow-2xl m-4 ml-20">
+    <div className="h-screen flex flex-col enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4 ml-20">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full aurora-bg flex items-center justify-center glow">
+          <div className="w-10 h-10 rounded-full aurora-bg flex items-center justify-center premium-glow">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -88,7 +88,7 @@ const ChatInterface = () => {
             <p className="text-sm text-white/70">AI Policy Assistant</p>
           </div>
         </div>
-        <div className="text-xs text-white/50 glass px-3 py-1 rounded-full">
+        <div className="text-xs text-white/50 premium-glass px-3 py-1 rounded-full">
           VidhiAI Platform
         </div>
       </div>
@@ -107,7 +107,7 @@ const ChatInterface = () => {
                 message.role === 'user' 
                   ? 'aurora-secondary-bg' 
                   : 'aurora-accent-bg'
-              } glow`}>
+              } premium-glow`}>
                 {message.role === 'user' ? (
                   <User className="w-4 h-4 text-white" />
                 ) : (
@@ -115,7 +115,7 @@ const ChatInterface = () => {
                 )}
               </div>
               <div
-                className={`max-w-[70%] p-4 rounded-2xl glass-dark ${
+                className={`max-w-[70%] p-4 rounded-2xl enhanced-glass ${
                   message.role === 'user'
                     ? 'rounded-tr-sm'
                     : 'rounded-tl-sm'
@@ -133,10 +133,10 @@ const ChatInterface = () => {
           ))}
           {isLoading && (
             <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 rounded-full aurora-accent-bg flex items-center justify-center glow">
+              <div className="w-8 h-8 rounded-full aurora-accent-bg flex items-center justify-center premium-glow">
                 <Bot className="w-4 h-4 text-white" />
               </div>
-              <div className="glass-dark p-4 rounded-2xl rounded-tl-sm glow">
+              <div className="enhanced-glass p-4 rounded-2xl rounded-tl-sm glow">
                 <div className="flex space-x-2">
                   <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -154,7 +154,7 @@ const ChatInterface = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="glass rounded-full w-10 h-10 p-0 glow-hover"
+            className="premium-glass rounded-full w-10 h-10 p-0 glow-hover"
           >
             <Paperclip className="w-4 h-4 text-white" />
           </Button>
@@ -164,7 +164,7 @@ const ChatInterface = () => {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask me about AI policies, regulations, or frameworks..."
-              className="glass border-white/20 text-white placeholder:text-white/50 rounded-2xl pr-12 h-12 glow-hover"
+              className="premium-glass border-white/20 text-white placeholder:text-white/50 rounded-2xl pr-12 h-12 glow-hover"
               disabled={isLoading}
             />
             <Button

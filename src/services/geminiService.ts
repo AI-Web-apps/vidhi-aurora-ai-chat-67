@@ -8,14 +8,14 @@ export class GeminiService {
   private baseUrl: string;
 
   constructor() {
-    // Note: In a real app, this should be in environment variables
+    // Using your provided API key
     this.apiKey = 'AIzaSyCsw06QWBk44pfvzpxy21gpRm8cV-tPvD8';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
   }
 
   private getSystemPrompt(): string {
     return `
-You are an expert assistant trained to help users understand AI policy documents. Your responses must be clear, accurate, neutral, and grounded strictly in the provided documents.
+You are Vidhi, an expert AI assistant specialized in AI policy documents and governance frameworks. Your responses must be clear, accurate, neutral, and grounded strictly in the provided documents.
 
 Your primary tasks are:
 - Summarize relevant sections when asked
@@ -45,6 +45,8 @@ Do not generate speculative or hallucinated content. Only return what is directl
 
   async generateResponse(userMessage: string): Promise<string> {
     try {
+      console.log('Sending request to Gemini API...');
+      
       const response = await fetch(`${this.baseUrl}/models/gemini-pro:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
@@ -61,8 +63,8 @@ Do not generate speculative or hallucinated content. Only return what is directl
           ],
           generationConfig: {
             temperature: 0.7,
-            topK: 1,
-            topP: 1,
+            topK: 40,
+            topP: 0.95,
             maxOutputTokens: 2048,
           },
           safetySettings: [
@@ -86,20 +88,26 @@ Do not generate speculative or hallucinated content. Only return what is directl
         })
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('API Response:', data);
       
-      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
         return data.candidates[0].content.parts[0].text;
       } else {
+        console.error('Invalid response format:', data);
         throw new Error('Invalid response format from Gemini API');
       }
     } catch (error) {
       console.error('Error calling Gemini API:', error);
-      return "I apologize, but I'm currently unable to process your request. This could be due to a temporary service issue. Please try again in a moment.";
+      return "I apologize, but I'm currently unable to process your request. This could be due to a temporary service issue or API configuration problem. Please try again in a moment.";
     }
   }
 

@@ -36,7 +36,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="w-80 h-screen glass border-r border-white/20 backdrop-blur-2xl flex flex-col">
+    <div className="w-80 h-screen enhanced-glass border-r border-white/10 backdrop-blur-2xl flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
@@ -61,7 +61,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
         </div>
         <Button
           onClick={handleNewConversation}
-          className="w-full glass-dark text-white rounded-xl h-10 glow-hover"
+          className="w-full premium-glass text-white rounded-xl h-10 glow-hover border border-white/20"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Conversation
@@ -78,8 +78,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
             {conversations.map((conv) => (
               <div
                 key={conv.id}
-                className={`p-3 glass-dark rounded-xl cursor-pointer glow-hover group ${
-                  currentConversationId === conv.id ? 'aurora-accent-bg' : ''
+                className={`p-3 enhanced-glass rounded-xl cursor-pointer glow-hover group transition-all duration-200 ${
+                  currentConversationId === conv.id ? 'aurora-accent-bg border border-blue-400/30' : 'border border-white/10'
                 }`}
                 onClick={() => handleConversationClick(conv.id)}
               >
@@ -117,14 +117,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-2 glass-dark rounded-lg"
+              className="flex items-center justify-between p-2 enhanced-glass rounded-lg border border-white/10"
             >
               <div className="flex items-center space-x-2">
                 <feature.icon className="w-4 h-4 text-white/70" />
                 <span className="text-sm text-white/70">{feature.label}</span>
               </div>
               <div className={`w-2 h-2 rounded-full ${
-                feature.active ? 'aurora-accent-bg glow' : 'bg-white/20'
+                feature.active ? 'aurora-accent-bg premium-glow' : 'bg-white/20'
               }`} />
             </div>
           ))}
@@ -135,7 +135,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
       <div className="p-4 border-t border-white/10">
         <Button
           variant="ghost"
-          className="w-full justify-start text-white/70 hover:text-white glass-dark rounded-xl"
+          className="w-full justify-start text-white/70 hover:text-white premium-glass rounded-xl border border-white/10"
         >
           <Settings className="w-4 h-4 mr-2" />
           Settings
