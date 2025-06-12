@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { ChatProvider } from '@/contexts/ChatContext';
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatInterface from '@/components/ChatInterface';
-import DocumentUpload from '@/components/DocumentUpload';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,9 +46,6 @@ const Index = () => {
         <div className="flex-1 flex flex-col">
           <ChatInterface />
         </div>
-
-        {/* Document Upload */}
-        <DocumentUpload />
       </div>
     </ChatProvider>
   );

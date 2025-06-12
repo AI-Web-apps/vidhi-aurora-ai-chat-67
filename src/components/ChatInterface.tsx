@@ -1,12 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Sparkles, Bot, User, FileText } from 'lucide-react';
+import { Send, Sparkles, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChatContext } from '@/contexts/ChatContext';
 import { geminiService } from '@/services/geminiService';
-import { useToast } from '@/hooks/use-toast';
 
 const ChatInterface = () => {
   const {
@@ -17,29 +16,27 @@ const ChatInterface = () => {
   } = useChatContext();
 
   const [inputValue, setInputValue] = useState('');
-  const [showPdfOptions, setShowPdfOptions] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-
-  // Pre-loaded AI policy document URLs for quick access
-  const policyDocuments = [
-    {
-      name: "EU AI Act",
-      url: "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32021R0106"
-    },
-    {
-      name: "OECD AI Principles", 
-      url: "https://www.oecd.org/going-digital/ai/principles/"
-    }
-  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = async (withPdf = false, selectedPdfUrl = '') => {
+  const formatMessage = (content: string) => {
+    // Convert markdown-style formatting to HTML-like formatting
+    return content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^• /gm, '• ')
+      .replace(/^- /gm, '• ')
+      .split('\n')
+      .map((line, index) => (
+        <div key={index} className="mb-1" dangerouslySetInnerHTML={{ __html: line }} />
+      ));
+  };
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim() || !currentConversation) return;
 
     // Add user message
@@ -49,31 +46,14 @@ const ChatInterface = () => {
     });
 
     const userMessage = inputValue;
-    const pdfToUse = withPdf ? (selectedPdfUrl || pdfUrl) : '';
     setInputValue('');
-    setPdfUrl('');
-    setShowPdfOptions(false);
     setIsLoading(true);
 
     // Scroll to bottom after user message
     setTimeout(scrollToBottom, 100);
 
     try {
-      let aiResponse;
-      
-      if (pdfToUse) {
-        // Use PDF-enhanced response
-        const pdfName = pdfToUse.split('/').pop() || 'Policy Document';
-        aiResponse = await geminiService.generateResponseWithPDF(userMessage, pdfToUse, pdfName);
-        
-        toast({
-          title: "Document analyzed",
-          description: `Response generated using ${pdfName}`,
-        });
-      } else {
-        // Regular response - works as both general AI and policy assistant
-        aiResponse = await geminiService.generateResponse(userMessage);
-      }
+      const aiResponse = await geminiService.generateResponse(userMessage);
       
       addMessage({
         role: 'assistant',
@@ -108,7 +88,7 @@ const ChatInterface = () => {
 
   if (!currentConversation) {
     return (
-      <div className="h-[85vh] flex items-center justify-center enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4">
+      <div className="h-[90vh] flex items-center justify-center enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4">
         <div className="text-center">
           <Sparkles className="w-16 h-16 aurora-text mx-auto mb-4 premium-glow" />
           <h2 className="text-2xl font-bold aurora-text mb-2">Welcome to VidhiAI</h2>
@@ -119,7 +99,7 @@ const ChatInterface = () => {
   }
 
   return (
-    <div className="h-[85vh] flex flex-col enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4 ml-20">
+    <div className="h-[90vh] flex flex-col enhanced-glass rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl m-4 ml-20">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-white/10">
         <div className="flex items-center space-x-3">
@@ -128,7 +108,7 @@ const ChatInterface = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold aurora-text">Vidhi</h1>
-            <p className="text-sm text-white/70">AI Assistant & Policy Expert</p>
+            <p className="text-sm text-white/70">Policy AI Assistant</p>
           </div>
         </div>
         <div className="text-xs text-white/50 premium-glass px-3 py-1 rounded-full">
@@ -164,7 +144,9 @@ const ChatInterface = () => {
                     : 'rounded-tl-sm'
                 } glow-hover`}
               >
-                <p className="text-white leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                <div className="text-white leading-relaxed">
+                  {message.role === 'assistant' ? formatMessage(message.content) : message.content}
+                </div>
                 <p className="text-xs text-white/50 mt-2">
                   {message.timestamp.toLocaleTimeString([], { 
                     hour: '2-digit', 
@@ -192,70 +174,20 @@ const ChatInterface = () => {
         </div>
       </ScrollArea>
 
-      {/* PDF Options Panel */}
-      {showPdfOptions && (
-        <div className="p-4 border-t border-white/10 glass-dark">
-          <h4 className="text-sm font-medium text-white/70 mb-3">Analyze with Document</h4>
-          
-          {/* Quick Access Policy Documents */}
-          <div className="grid grid-cols-1 gap-2 mb-4">
-            {policyDocuments.map((doc, index) => (
-              <Button
-                key={index}
-                onClick={() => handleSendMessage(true, doc.url)}
-                disabled={isLoading || !inputValue.trim()}
-                className="justify-start text-left h-auto p-3 premium-glass border border-white/20 rounded-xl glow-hover"
-              >
-                <FileText className="w-4 h-4 mr-2 text-white/70" />
-                <div>
-                  <div className="text-sm text-white">{doc.name}</div>
-                  <div className="text-xs text-white/50 truncate">{doc.url}</div>
-                </div>
-              </Button>
-            ))}
-          </div>
-
-          {/* Custom URL Input */}
-          <div className="flex space-x-2">
-            <Input
-              value={pdfUrl}
-              onChange={(e) => setPdfUrl(e.target.value)}
-              placeholder="Enter PDF URL..."
-              className="premium-glass border-white/20 text-white placeholder:text-white/50 rounded-xl flex-1"
-            />
-            <Button
-              onClick={() => handleSendMessage(true)}
-              disabled={isLoading || !inputValue.trim() || !pdfUrl.trim()}
-              className="aurora-bg rounded-xl glow-hover"
-            >
-              Analyze
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Input Area */}
       <div className="p-6 border-t border-white/10">
         <div className="flex items-center space-x-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="premium-glass rounded-full w-10 h-10 p-0 glow-hover"
-            onClick={() => setShowPdfOptions(!showPdfOptions)}
-          >
-            <Paperclip className="w-4 h-4 text-white" />
-          </Button>
           <div className="flex-1 relative">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me anything or analyze AI policy documents..."
+              placeholder="Ask me any policy related questions..."
               className="premium-glass border-white/20 text-white placeholder:text-white/50 rounded-2xl pr-12 h-12 glow-hover"
               disabled={isLoading}
             />
             <Button
-              onClick={() => handleSendMessage()}
+              onClick={handleSendMessage}
               disabled={isLoading || !inputValue.trim()}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 aurora-bg rounded-full w-8 h-8 p-0 glow-hover"
             >
@@ -264,7 +196,7 @@ const ChatInterface = () => {
           </div>
         </div>
         <p className="text-xs text-white/40 mt-2 text-center">
-          {showPdfOptions ? "Select a document to analyze with your question" : "General AI assistant with policy document analysis capabilities"}
+          Policy AI assistant powered by advanced AI technology
         </p>
       </div>
     </div>

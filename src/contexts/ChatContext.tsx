@@ -55,7 +55,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       messages: [{
         id: Date.now().toString(),
         role: 'assistant',
-        content: "Hello! I'm Vidhi, your advanced AI assistant. I can help you with:\n\n• **General questions** - Technology, science, coding, business, and more\n• **AI Policy analysis** - When you provide policy documents, I can analyze, summarize, and explain them\n\nFeel free to ask me anything or use the paperclip icon to analyze PDF documents! How can I assist you today?",
+        content: "I am Vidhi, your policy AI assistant. You can ask any questions about policy to me.",
         timestamp: new Date()
       }],
       createdAt: new Date(),

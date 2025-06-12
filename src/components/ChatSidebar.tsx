@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Plus, MessageSquare, FileText, Settings, Trash2, Download, X } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -17,13 +17,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
     switchConversation,
     deleteConversation
   } = useChatContext();
-
-  const features = [
-    { icon: FileText, label: 'Document Analysis', active: true },
-    { icon: MessageSquare, label: 'Multi-turn Chat', active: true },
-    { icon: Download, label: 'Export Chat', active: false },
-    { icon: Settings, label: 'System Prompts', active: false },
-  ];
 
   const handleNewConversation = () => {
     createNewConversation();
@@ -74,72 +67,56 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onClose }) => {
           <h3 className="text-sm font-medium text-white/70 mb-3">Recent Conversations</h3>
         </div>
         <ScrollArea className="flex-1 px-4">
-          <div className="space-y-2">
+          <div className="space-y-3">
             {conversations.map((conv) => (
               <div
                 key={conv.id}
-                className={`p-3 enhanced-glass rounded-xl cursor-pointer glow-hover group transition-all duration-200 ${
-                  currentConversationId === conv.id ? 'aurora-accent-bg border border-blue-400/30' : 'border border-white/10'
+                className={`p-4 enhanced-glass rounded-2xl cursor-pointer glow-hover group transition-all duration-200 border ${
+                  currentConversationId === conv.id 
+                    ? 'aurora-accent-bg border-blue-400/50 shadow-lg shadow-blue-500/20' 
+                    : 'border-white/20 hover:border-white/30'
                 }`}
                 onClick={() => handleConversationClick(conv.id)}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-white truncate">
-                      {conv.title}
-                    </h4>
-                    <p className="text-xs text-white/50 mt-1">
-                      {conv.updatedAt.toLocaleDateString()}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0 mr-2">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <MessageSquare className="w-4 h-4 text-white/60 flex-shrink-0" />
+                      <h4 className="text-sm font-medium text-white truncate">
+                        {conv.title}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-white/50">
+                      {conv.updatedAt.toLocaleDateString()} • {conv.messages.length} messages
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 p-0 hover:bg-red-500/20 hover:text-red-400"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteConversation(conv.id);
                     }}
                   >
-                    <Trash2 className="w-3 h-3 text-white/50" />
+                    <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
+                {currentConversationId === conv.id && (
+                  <div className="mt-2 w-full h-1 aurora-bg rounded-full opacity-60"></div>
+                )}
               </div>
             ))}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Features */}
-      <div className="p-4 border-t border-white/10">
-        <h3 className="text-sm font-medium text-white/70 mb-3">Features</h3>
-        <div className="space-y-2">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-2 enhanced-glass rounded-lg border border-white/10"
-            >
-              <div className="flex items-center space-x-2">
-                <feature.icon className="w-4 h-4 text-white/70" />
-                <span className="text-sm text-white/70">{feature.label}</span>
-              </div>
-              <div className={`w-2 h-2 rounded-full ${
-                feature.active ? 'aurora-accent-bg premium-glow' : 'bg-white/20'
-              }`} />
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Footer */}
       <div className="p-4 border-t border-white/10">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-white/70 hover:text-white premium-glass rounded-xl border border-white/10"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Settings
-        </Button>
+        <div className="text-center">
+          <p className="text-xs text-white/50 mb-2">VidhiAI Policy Assistant</p>
+          <div className="w-full h-px aurora-bg opacity-30"></div>
+        </div>
       </div>
     </div>
   );
