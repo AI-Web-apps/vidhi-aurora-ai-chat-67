@@ -1,21 +1,23 @@
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 interface GeminiResponse {
   content: string;
 }
 
 export class GeminiService {
-  private apiKey: string;
-  private baseUrl: string;
+  private genAI: GoogleGenerativeAI;
+  private model: any;
 
   constructor() {
     // Using your provided API key
-    this.apiKey = 'AIzaSyCsw06QWBk44pfvzpxy21gpRm8cV-tPvD8';
-    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    this.genAI = new GoogleGenerativeAI('AIzaSyCsw06QWBk44pfvzpxy21gpRm8cV-tPvD8');
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
   }
 
   private getSystemPrompt(): string {
     return `
-You are Vidhi, an expert AI assistant specialized in AI policy documents and governance frameworks. Your responses must be clear, accurate, neutral, and grounded strictly in the provided documents.
+You are an expert assistant trained to help users understand AI policy documents. Your responses must be clear, accurate, neutral, and grounded strictly in the provided documents.
 
 Your primary tasks are:
 - Summarize relevant sections when asked
@@ -45,86 +47,158 @@ Do not generate speculative or hallucinated content. Only return what is directl
 
   async generateResponse(userMessage: string): Promise<string> {
     try {
-      console.log('Sending request to Gemini API...');
+      console.log('Sending request to Gemini AI...');
       
-      const response = await fetch(`${this.baseUrl}/models/gemini-pro:generateContent?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: this.getSystemPrompt() },
-                { text: userMessage }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
+      const chat = this.model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: this.getSystemPrompt() }],
           },
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
-            }
-          ]
-        })
+          {
+            role: "model",
+            parts: [{ text: "I understand. I am Vidhi, your AI assistant specialized in AI policy documents. I will provide clear, accurate, and neutral responses based strictly on the provided policy documents. How can I help you today?" }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
       });
 
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Response:', data);
+      const result = await chat.sendMessage(userMessage);
+      const response = await result.response;
+      const text = response.text();
       
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        return data.candidates[0].content.parts[0].text;
-      } else {
-        console.error('Invalid response format:', data);
-        throw new Error('Invalid response format from Gemini API');
-      }
+      console.log('AI Response received successfully');
+      return text;
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      console.error('Error calling Gemini AI:', error);
       return "I apologize, but I'm currently unable to process your request. This could be due to a temporary service issue or API configuration problem. Please try again in a moment.";
     }
   }
 
   async generateStreamResponse(userMessage: string): Promise<AsyncGenerator<string, void, unknown>> {
-    // For now, we'll simulate streaming by returning the full response
-    // In a real implementation, you'd use the streaming endpoint
-    const response = await this.generateResponse(userMessage);
-    
-    async function* streamGenerator() {
-      const words = response.split(' ');
-      for (const word of words) {
-        yield word + ' ';
-        await new Promise(resolve => setTimeout(resolve, 50)); // Simulate typing delay
+    try {
+      console.log('Starting streaming response...');
+      
+      const chat = this.model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: this.getSystemPrompt() }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "I understand. I am Vidhi, your AI assistant specialized in AI policy documents. I will provide clear, accurate, and neutral responses based strictly on the provided policy documents. How can I help you today?" }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      });
+
+      const result = await chat.sendMessageStream(userMessage);
+      
+      async function* streamGenerator() {
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            yield chunkText;
+          }
+        }
       }
+      
+      return streamGenerator();
+    } catch (error) {
+      console.error('Error in streaming response:', error);
+      
+      // Fallback to non-streaming response
+      async function* fallbackGenerator() {
+        const response = await this.generateResponse(userMessage);
+        const words = response.split(' ');
+        for (const word of words) {
+          yield word + ' ';
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      return fallbackGenerator.bind(this)();
     }
-    
-    return streamGenerator();
+  }
+
+  // Method to upload PDF from URL (browser-compatible version)
+  async uploadPDFFromURL(url: string, displayName: string) {
+    try {
+      console.log(`Uploading PDF: ${displayName}...`);
+      
+      // Fetch PDF as blob
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+      }
+      
+      const pdfBlob = await response.blob();
+      
+      // Upload to Gemini Files API
+      const uploadResponse = await this.genAI.fileManager.uploadFile(pdfBlob, {
+        mimeType: "application/pdf",
+        displayName: displayName,
+      });
+
+      console.log(`PDF uploaded successfully: ${uploadResponse.file.displayName}`);
+      return uploadResponse.file;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      throw error;
+    }
+  }
+
+  // Method to generate response with PDF context
+  async generateResponseWithPDF(userMessage: string, pdfUrl?: string, pdfName?: string): Promise<string> {
+    try {
+      let fileUri = null;
+      
+      if (pdfUrl && pdfName) {
+        const uploadedFile = await this.uploadPDFFromURL(pdfUrl, pdfName);
+        fileUri = uploadedFile.uri;
+      }
+
+      const parts = [{ text: userMessage }];
+      if (fileUri) {
+        parts.push({
+          fileData: {
+            mimeType: "application/pdf",
+            fileUri: fileUri
+          }
+        });
+      }
+
+      const result = await this.model.generateContent({
+        contents: [{
+          role: "user",
+          parts: parts
+        }],
+        systemInstruction: this.getSystemPrompt(),
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      });
+
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Error generating response with PDF:', error);
+      return "I apologize, but I encountered an error while processing your request with the document. Please try again.";
+    }
   }
 }
 
