@@ -132,57 +132,20 @@ Do not generate speculative or hallucinated content. Only return what is directl
     }
   }
 
-  // Method to upload PDF from URL (browser-compatible version)
-  async uploadPDFFromURL(url: string, displayName: string) {
+  // Simplified method without file upload for now
+  async generateResponseWithContext(userMessage: string, context?: string): Promise<string> {
     try {
-      console.log(`Uploading PDF: ${displayName}...`);
+      console.log('Generating response with context...');
       
-      // Fetch PDF as blob
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch PDF: ${response.statusText}`);
-      }
-      
-      const pdfBlob = await response.blob();
-      
-      // Upload to Gemini Files API
-      const uploadResponse = await this.genAI.fileManager.uploadFile(pdfBlob, {
-        mimeType: "application/pdf",
-        displayName: displayName,
-      });
-
-      console.log(`PDF uploaded successfully: ${uploadResponse.file.displayName}`);
-      return uploadResponse.file;
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      throw error;
-    }
-  }
-
-  // Method to generate response with PDF context
-  async generateResponseWithPDF(userMessage: string, pdfUrl?: string, pdfName?: string): Promise<string> {
-    try {
-      let fileUri = null;
-      
-      if (pdfUrl && pdfName) {
-        const uploadedFile = await this.uploadPDFFromURL(pdfUrl, pdfName);
-        fileUri = uploadedFile.uri;
-      }
-
-      const parts = [{ text: userMessage }];
-      if (fileUri) {
-        parts.push({
-          fileData: {
-            mimeType: "application/pdf",
-            fileUri: fileUri
-          }
-        });
+      let enhancedMessage = userMessage;
+      if (context) {
+        enhancedMessage = `Context: ${context}\n\nQuestion: ${userMessage}`;
       }
 
       const result = await this.model.generateContent({
         contents: [{
           role: "user",
-          parts: parts
+          parts: [{ text: enhancedMessage }]
         }],
         systemInstruction: this.getSystemPrompt(),
         generationConfig: {
@@ -196,8 +159,8 @@ Do not generate speculative or hallucinated content. Only return what is directl
       const response = await result.response;
       return response.text();
     } catch (error) {
-      console.error('Error generating response with PDF:', error);
-      return "I apologize, but I encountered an error while processing your request with the document. Please try again.";
+      console.error('Error generating response with context:', error);
+      return "I apologize, but I encountered an error while processing your request. Please try again.";
     }
   }
 }
